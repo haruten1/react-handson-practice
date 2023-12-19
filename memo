@@ -1,0 +1,37 @@
+# JavaScriptの基礎知識
+主にES6で登場した文法の紹介
+- const,let
+- テンプレート文字列
+- アロー関数とスコープ
+```
+var tahoe = {
+    mountains: ["Freel", "Rose", "Tallac", "Rubicon", "Silver"],
+    print: function(delay=1000) {
+
+    setTimeout(function() {
+        console.log(this.mountains.join(","))
+    }, delay);
+
+    }
+};
+```
+この場合のthisはtahoeオブジェクトではなく、windowオブジェクトになる。
+この解決としてアロー関数でコールバックを記述する。
+
+```
+var tahoe = {
+    mountains: ["Freel", "Rose", "Tallac", "Rubicon", "Silver"],
+    print: function(delay=1000) {
+
+    setTimeout(
+        () => console.log(this.mountains.join(",")),
+        delay
+    );
+    }
+};
+```
+**アロー関数は独自のスコープを持たない**
+- デストラクチャリング（分割代入）
+- スプレット構文
+- Promise,async/await
+- クラス宣言
