@@ -56,3 +56,137 @@ for文のような役割をmap関数に切り出している。
 がある。
 
 # React
+React = DOM APIの呼び出しを一手に引き受けるライブラリ
+
+Reactは以下二つのライブラリが最低必要になる。
+- React(React要素を作成)
+- ReactDOM(React要素をDOMに変換)
+
+## React要素
+
+```
+React.createElement("h1", null, "Baked Salmon");
+```
+は
+```
+<h1>Baked Salmon</h1>
+```
+に置換される。
+
+React要素をコンソールに出力すると以下のようになる。
+```
+Object
+    typeof:Symbol(react.element)
+    key: null
+    props: 
+        children: "Baked almon"
+        [[Prototype]]: Object
+    ref: null
+    type: "h1"
+    （省略）
+    [[Prototype]]: Object
+```
+propsなどは全てオブジェクトの要素として存在している。
+
+**描画と子要素**
+```
+const dish = React.createElement("h1", null, "Baked Salmon");
+const dessert = React.createElement("h2", null, "Coconut Cream Pie");
+
+ReactDOM.render(
+    [dish, dessert],
+    document.getElementById('react-container')
+);
+```
+↓
+```
+<div id="react-container">
+    <h1>Baked Salmon</h1>
+    <h2>Cream Pie</h2>
+</div>
+```
+↑このようなDOMが作られる。
+
+**関数コンポーネント**
+```
+function IngredientsList({items}) {
+return React.createElement(
+    "ul",
+    { className: "ingredients" },
+    items.map((ingredient, i) =>
+    React.createElement("li", { key: i }, ingredient) )
+);
+}
+
+const items = [
+    "1 cup unsalted butter",
+    "1 cup crunchy peanut butter",
+    "1 cup brown sugar",
+    "1 cup white sugar",
+    "2 eggs",
+    "2.5 cups all purpose flour",
+    "1 teaspoon baking powder",
+    "0.5 teaspoon salt"
+];
+
+ReactDOM.render(
+React.createElement(IngredientsList, {items}, null),
+document.getElementById("react-container")
+);
+```
+上記のコードはitems配列をli要素に変換している。
+
+本書ではクラスコンポーネントも紹介ている。
+クラスコンポーネントは将来的に廃止される予定である。
+
+## jsx
+JavascriptにXMLのようなタグベース構文を記述するための言語拡張。
+ネストの深いDOMを作る必要がある際、より宣言的な記述ができるようになる。
+
+jsx→js(es)への変換はBabelで行うことができる。
+
+## webpackによるビルド環境構築
+webpack = モジュールバンドラ : 異なる種類のファイル（js,jsx.css...）を単一のファイルに結合するためのツール
+
+create appを使わないやり方
+
+```
+<!-- package.jsonを作成 -->
+npm init -y
+<!-- 必要なライブラリをインストール -->
+npm install react react-dom serve
+
+<!-- コンポーネント等を追加 -->
+
+<!-- webpackをインストール -->
+npm install --save-dev webpack webpack-cli
+
+```
+
+```:webpack.config.js
+var path = require("path");
+
+module.exports = {
+  entry: "./src/index.js",
+  output: {
+    path: path.join(__dirname, "dist", "assets"),
+    filename: "bundle.js",
+  },
+  devtool: "#source-map",
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        exclude: /(node_modules)/,
+        loader: "babel-loader",
+      },
+      {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+    ],
+  },
+};
+
+```
+webpack.configにビルドの設定を記述。
