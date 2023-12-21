@@ -59,8 +59,8 @@ for文のような役割をmap関数に切り出している。
 React = DOM APIの呼び出しを一手に引き受けるライブラリ
 
 Reactは以下二つのライブラリが最低必要になる。
-- React
-- ReactDOM(React要素をDOMに変換する)
+- React(React要素を作成)
+- ReactDOM(React要素をDOMに変換)
 
 ## React要素
 
@@ -139,3 +139,54 @@ document.getElementById("react-container")
 本書ではクラスコンポーネントも紹介ている。
 クラスコンポーネントは将来的に廃止される予定である。
 
+## jsx
+JavascriptにXMLのようなタグベース構文を記述するための言語拡張。
+ネストの深いDOMを作る必要がある際、より宣言的な記述ができるようになる。
+
+jsx→js(es)への変換はBabelで行うことができる。
+
+## webpackによるビルド環境構築
+webpack = モジュールバンドラ : 異なる種類のファイル（js,jsx.css...）を単一のファイルに結合するためのツール
+
+create appを使わないやり方
+
+```
+<!-- package.jsonを作成 -->
+npm init -y
+<!-- 必要なライブラリをインストール -->
+npm install react react-dom serve
+
+<!-- コンポーネント等を追加 -->
+
+<!-- webpackをインストール -->
+npm install --save-dev webpack webpack-cli
+
+```
+
+```:webpack.config.js
+var path = require("path");
+
+module.exports = {
+  entry: "./src/index.js",
+  output: {
+    path: path.join(__dirname, "dist", "assets"),
+    filename: "bundle.js",
+  },
+  devtool: "#source-map",
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        exclude: /(node_modules)/,
+        loader: "babel-loader",
+      },
+      {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+    ],
+  },
+};
+
+```
+webpack.configにビルドの設定を記述。
