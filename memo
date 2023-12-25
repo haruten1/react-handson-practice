@@ -216,3 +216,214 @@ Babelの設定ファイル。
   },
 ```
 package.jsonに記述をしておくと楽。
+
+## フック
+フック＝コンポーネントとは独立した関数で、コンポーネントに着脱可能な機能を取り付ける。
+
+### useRef
+DOMノードへの参照を保持する。
+```
+import React, { useRef } from "react";
+
+export default function AddColorForm({ onNewColor = f => f }) {
+  const txtTitle = useRef();
+  const hexColor = useRef();
+
+  const submit = e => {
+    e.preventDefault();
+    const title = txtTitle.current.value;
+    const color = hexColor.current.value;
+    onNewColor(title, color);
+    txtTitle.current.value = "";
+    hexColor.current.value = "";
+  };
+
+<!-- refプロパティにrefオブジェクトを指定 -->
+  return (
+    <form onSubmit={submit}>
+      <input ref={txtTitle} type="text" placeholder="color title..." required />
+      <input ref={hexColor} type="color" required />
+      <button>ADD</button>
+    </form>
+  );
+}
+```
+ref＝{}にrefオブジェクトを指定することで、refのcurrentフィールド経由でDOMに直接アクセスできるようになる。
+しかし、このコードのようにDOMに直接アクセスして書き換えるようなコンポーネントは「制御されていないコンポーネント」と呼ばれ、推奨されない。
+
+```
+import React, { useState } from "react";
+
+export default function AddColorForm({ onNewColor = f => f }) {
+  const [title, setTitle] = useState("");
+  const [color, setColor] = useState("#000000");
+
+  const submit = e => {
+    e.preventDefault();
+    onNewColor(title, color);
+    setTitle("");
+    setColor("");
+  };
+
+  return (
+    <form onSubmit={submit}>
+      <input
+        value={title}
+        onChange={event => setTitle(event.target.value)}
+        type="text"
+        placeholder="color title..."
+        required
+      />
+      <input
+        value={color}
+        onChange={event => setColor(event.target.value)}
+        type="color"
+        required
+      />
+      <button>ADD</button>
+    </form>
+  );
+}
+```
+上記はrefの代わりにstateでvalueを管理している。
+inputに値を入力するたびにstateが更新される仕組み＝制御されたコンポーネント。
+
+## カスタムフック
+複数のコンポーネントで重複した関数を切り出したもの。
+```
+import { useState } from "react";
+
+export const useInput = initialValue => {
+  const [value, setValue] = useState(initialValue);
+  return [
+    { value, onChange: e => setValue(e.target.value) },
+    () => setValue(initialValue)
+  ];
+};
+```
+↑stateの値とstateを更新する関数のみを切り出したもの。
+stateの初期値を受け取り、配列を戻り値として返却する。
+
+```
+import React from "react";
+import { useInput } from "./hooks";
+
+export default function AddColorForm({ onNewColor = f => f }) {
+  const [titleProps, resetTitle] = useInput("");
+  const [colorProps, resetColor] = useInput("#000000");
+
+  const submit = e => {
+    e.preventDefault();
+    onNewColor(titleProps.value, colorProps.value);
+    resetTitle();
+    resetColor();
+  };
+
+  return (
+    <form onSubmit={submit}>
+      <input
+        {...titleProps}
+        type="text"
+        placeholder="color title..."
+        required
+      />
+      <input {...colorProps} type="color" required />
+      <button>ADD</button>
+    </form>
+  );
+}
+
+```
+↑useStateを呼び出す代わりにuseInputを呼び出している。
+{...titleProps}の箇所で、スプレッド構文によりvalueとonChange要素がinputに設定されます。
+onSubmitのresetTitle()により、フォーム送信後に初期化を行うこともできる。
+
+カスタムフック内部で別のフックを呼び出した場合、呼び出し元のコンポーネントが際描画される。
+
+### Reactコンテキスト
+ステートをルートコンポーネントで一括管理するのが理想だが、コンポーネントの階層が深くなるほど上位から下位へ多くのコンポーネントを経由してデータを受け渡しする必要ができてしまう。
+それを解決するのが**コンテキスト**。
+
+```
+import React, { createContext } from "react";
+import colors from "./color-data";
+import { render } from "react-dom";
+import App from "./App";
+
+export const ColorContext = createContext();
+
+render(
+  <ColorContext.Provider value={{ colors }}>
+    <App />
+  </ColorContext.Provider>,
+  document.getElementById("root")
+);
+```
+createContextを用いてコンテキストを作成する。
+Context.Provider=データの提供元
+Context.Consumer＝データの受け渡し先
+
+Context.Providerで囲ったコンポーネント以下の全てのコンポーネントに直接value={{ colors }}の受け渡しを行うことができる。
+
+```
+import React, { useContext } from "react";
+import Color from "./Color";
+import { ColorContext } from "./";
+
+export default function ColorList() {
+  const { colors } = useContext(ColorContext);
+
+  if (!colors.length) return <div>No Colors Listed. (Add a Color)</div>;
+
+  return (
+    <div>
+      {colors.map(color => (
+        <Color key={color.id} {...color} />
+      ))}
+    </div>
+  );
+}
+```
+const { colors } = useContext(ColorContext);
+でcolorsを直接取得している。
+
+### コンテキストとstateの併用
+```
+import React, { createContext, useState } from "react";
+import colorData from "./color-data.json";
+import { v4 } from "uuid";
+
+export const ColorContext = createContext();
+
+export default function ColorProvider({ children }) {
+  const [colors, setColors] = useState(colorData);
+
+  const addColor = (title, color) =>
+    setColors([
+      ...colors,
+      {
+        id: v4(),
+        rating: 0,
+        title,
+        color
+      }
+    ]);
+
+  const rateColor = (id, rating) =>
+    setColors(
+      colors.map(color => (color.id === id ? { ...color, rating } : color))
+    );
+
+  const removeColor = id => setColors(colors.filter(color => color.id !== id));
+
+  return (
+    <ColorContext.Provider value={{ colors, addColor, removeColor, rateColor }}>
+      {children}
+    </ColorContext.Provider>
+  );
+}
+```
+value={{ colors, addColor, removeColor, rateColor }}>
+により、配下のコンポーネントでstateの値とその更新を行うことができる。
+setColorsそのものを共有するのではなく、必要な処理（addColorなど）を提供することで、不要なバグを防ぐことができる。
+
