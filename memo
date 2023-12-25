@@ -161,6 +161,15 @@ npm install react react-dom serve
 <!-- webpackをインストール -->
 npm install --save-dev webpack webpack-cli
 
+<!-- jsxコンパイルのためBabelをインストール -->
+npm install babel - loader `babel/core --save-dev
+
+<!-- Babelのプリセット（プラグイン）をインストール -->
+npm install @babel/present-env `babel/present-react --save-dev
+
+<!-- webpackの実行 -->
+npx webpack --mode development
+
 ```
 
 ```:webpack.config.js
@@ -176,7 +185,9 @@ module.exports = {
   module: {
     rules: [
       {
+        <!-- 拡張子が.jsのファイルが全て対応になる -->
         test: /\.js$/,
+        <!-- 除外するファイル -->
         exclude: /(node_modules)/,
         loader: "babel-loader",
       },
@@ -190,3 +201,18 @@ module.exports = {
 
 ```
 webpack.configにビルドの設定を記述。
+
+```:babelrc
+<!-- プリセットを指定 -->
+{
+    "presets": ["@babel/preset-env", "@babel/preset-react"]
+}
+```
+Babelの設定ファイル。
+
+```:package.json
+"scripts": {
+    "build": "webpack --mode production"
+  },
+```
+package.jsonに記述をしておくと楽。
