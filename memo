@@ -427,3 +427,134 @@ value={{ colors, addColor, removeColor, rateColor }}>
 により、配下のコンポーネントでstateの値とその更新を行うことができる。
 setColorsそのものを共有するのではなく、必要な処理（addColorなど）を提供することで、不要なバグを防ぐことができる。
 
+### useEffect
+```
+function WordCount({ children = "" }) {
+  useAnyKeyToRender();
+
+  // 毎回異なるインスタンスが生成される
+  const words = children.split(" ");
+
+  useEffect(() => {
+    console.log("fresh render");
+  }, [words]);
+
+  return (
+    <>
+      <p>{children}</p>
+      <p>
+        <strong>{words.length} - words</strong>
+      </p>
+    </>
+  );
+}
+```
+wordsはレンダリングのたびに再生成されるので、useEffectもレンダリングのたびに実行されてしまう。
+これを回避するには
+①関数の外で依存配列を宣言する（性的な文字列）
+②useMemoを宣言する（関数など）
+
+### useMemo
+```
+function WordCount({ children = "" }) {
+  useAnyKeyToRender();
+
+  // useMemoによるメモ化
+  const words = useMemo(() => children.split(" "), [children]);
+
+  useEffect(() => {
+    console.log("fresh render");
+  }, [words]);
+
+  return (
+    <>
+      <p>{children}</p>
+      <p>
+        <strong>{words.length} - words</strong>
+      </p>
+    </>
+  );
+}
+```
+ const words = useMemo(() => children.split(" "), [children]);
+
+ 依存配列**children**に変更がない限り.splitは実行されず、wordsにはキャッシュされた値が代入される。
+ wordsは同一であることが保証される。
+
+ ### useCallback
+ useMemoは関数の返り値をキャッシュするが、useCallbackは関数自体をキャッシュする。
+ ```
+ // useCallbackによるメモ化
+  const fn = useCallback(() => {
+    console.log("hello");
+    console.log("world");
+  }, []);
+
+  useEffect(() => {
+    console.log("fresh render");
+    fn();
+  }, [fn]);
+ ```
+
+ ### useLayoutEffect
+ 1. コンポーネントの描画関数が呼び出される
+ 1. useLayoutEffectが実行される
+ 1. ブラウザのPaint処理で描画結果が画面に反映される
+ 1. useEffectが実行される
+
+ useLayoutEffect＝関数実行〜描画の間に実行できる
+
+ ```
+ function useWindowSize() {
+  const [width, setWidth] = useState(0);
+  const [height, setHeight] = useState(0);
+
+  const resize = () => {
+    setWidth(window.innerWidth);
+    setHeight(window.innerHeight);
+  };
+
+  useLayoutEffect(() => {
+    window.addEventListener("resize", resize);
+    resize();
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  return [width, height];
+}
+ ```
+ 上記はブラウザの大きさを測定する関数。
+ useLayoutEffectを利用することで描画前にブラウザの大きさを返すことができる。
+
+ ### useReducer
+ ```
+function Checkbox() {
+  const [checked, setChecked] = useState(false);
+
+  function toggle() {
+    setChecked(checked => !checked);
+  }
+
+  return (
+    <>
+      <input type="checkbox" value={checked} onChange={toggle} />
+      {checked ? "checked" : "not checked"}
+    </>
+  );
+}
+ ```
+はuseReducerを使うと
+```
+function Checkbox() {
+  const [checked, toggle] = useReducer(checked => !checked, false);
+
+  return (
+    <>
+      <input type="checkbox" value={checked} onChange={toggle} />
+      {checked ? "checked" : "not checked"}
+    </>
+  );
+}
+```
+とできる。
+useReducerの返り値は1つ目がステート値で二つ目がレデューサ関数。
