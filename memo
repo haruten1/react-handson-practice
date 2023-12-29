@@ -560,3 +560,161 @@ function Checkbox() {
 useReducerの返り値は1つ目がステート値で二つ目がレデューサ関数。
 
 ## サスペンス
+
+### エラーバウンダリ
+エラーバウンダリは、あるコンポーネントで例外が発生してもアプリケーション全体に影響が及 ばないようにするための機構。
+エラーバウンダリは特別な React コンポーネントで、子コン ポーネントで発生した例外を一手に引き受ける。
+
+残念なことに、このエラーバウンダリを使用するにはクラスコンポーネントを実装する必要がある。
+```
+import React, { Component } from "react";
+
+export default class ErrorBoundary extends Component {
+  state = { error: null };
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  render() {
+    const { error } = this.state;
+    const { children, fallback } = this.props;
+
+    if (error && !fallback) return <ErrorScreen error={error} />;
+    if (error) return fallback({error});
+    return children;
+  }
+}
+
+export const BreakThings = () => {
+  throw new Error("We intentionally broke something");
+}
+
+function ErrorScreen({ error }) {
+  return (
+    <div className="error">
+      <h3>We are sorry... something went wrong</h3>
+      <p>We cannot process your request at this moment.</p>
+      <p>ERROR: {error.message}</p>
+    </div>
+  );
+}
+```
+getDerivedStateFromError という特別なスタティックメソッドを実装。
+配下のコンポーネントchildrenで例外が発生した場合、このメソッドに通知される。
+
+```
+export const BreakThings = () => {
+throw new Error("We intentionally broke something");
+}
+```
+
+```
+return (
+    <SiteLayout
+      menu={
+        <ErrorBoundary>
+          <p>Menu</p>
+        </ErrorBoundary>
+      }
+    >
+      <ErrorBoundary>
+        <Callout>Callout</Callout>
+      </ErrorBoundary>
+      <ErrorBoundary>
+        <h1>Contents</h1>
+        <p>this is the main part of the example layout</p>
+        <BreakThings />
+      </ErrorBoundary>
+    </SiteLayout>
+  );
+```
+上記の例では、アプリケーションは 3 つのエラーバウンダリに分割されている。
+この場合、メ ニューのカラムと Callout コンポーネントの中に BreakThings が配置されているので、Error Screen コンポーネントが 2 つ描画される。
+
+### コードスプリッティング
+コードスプリッティングはコードベースを複数のかたまりに分割することでダウンロード時間 を短縮するテクニック。
+```
+export default function Agreement({ onAgree = f => f }) {
+  return (
+    <div>
+      <p>Terms...</p>
+      <p>These are the terms and stuff. Do you agree?</p>
+      <button onClick={onAgree}>I agree</button>
+    </div>
+  );
+}
+```
+
+```
+import React, { useState, Suspense, lazy } from "react";
+import Agreement from "./Agreement";
+import ClimbingBoxLoader from "react-spinners/ClimbingBoxLoader";
+
+const Main = lazy(() => import("./Main"));
+
+export default function App() {
+  const [agree, setAgree] = useState(false);
+
+  if (!agree) return <Agreement onAgree={() => setAgree(true)} />;
+
+  return (
+    <Suspense fallback={<ClimbingBoxLoader />}>
+      <Main />
+    </Suspense>
+  );
+}
+```
+初期状態では Agreement コンポーネントのみが描画され、ユーザーが利用許諾 に同意すれば、agree が更新され、Main コンポーネントと配下のコンポーネントが描画される。
+React.lazy を使ってインポートすることで、Main コンポーネントが初回描画される まで、Main のダウンロードを遅らせることが可能。
+React.lazy を使っているため、import 関数は即座に実行されず、Main コンポーネントの初 回描画時に実行される。それにより、Main コンポーネントは非同期に読み込まれる。
+
+### Suspense コンポーネント
+コンポーネントの非同期読み込みにはSuspense コンポーネントを用いる。
+```
+import React, { useState, Suspense, lazy } from "react";
+import Agreement from "./Agreement";
+import ClimbingBoxLoader from "react-spinners/ClimbingBoxLoader";
+const Main = lazy(() => import("./Main")); 
+
+export default function App() {
+const [agree, setAgree] = useState(false); 
+if (!agree)return <Agreement onAgree={() => setAgree(true)} />;
+return (
+<Suspense fallback={<ClimbingBoxLoader />}>
+  <Main /> 
+</Suspense>
+); }
+```
+Suspense の fallback プロパティに ClimbingBoxLoader が指定されているため、Main のロードが完了するまでは ClimbingBoxLoader コンポーネントが描画される。
+Main コンポーネントが無事に ロードされた時点で、Suspense は ClimbingBoxLoader をアンマウントして、代わりに Main コンポーネントを描画する。
+
+※react-spinnersはアニメーションライブラリ。今回はClimbingBoxLoaderというコンポーネントを使用している。
+
+** サスペンスの応用 **
+```
+import React, {Suspense} from "react";
+import ErrorBoundary from "./ErrorBoundary";
+import GridLoader from "react-spinners/GridLoader";
+
+const loadStatus = () => {
+    throw new Promise(resolves => null);
+};
+
+function Status() {
+  const status = loadStatus();
+  return <h1>status: {status}</h1>;
+}
+
+export default function App() {
+  return (
+    <Suspense fallback={<GridLoader />}>
+      <ErrorBoundary>
+        <Status />
+      </ErrorBoundary>
+    </Suspense>
+  );
+}
+```
+StatusコンポーネントをErrorBoundary内に記述することで、成功時にはStatusコンポーネント、失敗時にはエラー表示というハンドリングを行うことができる。
+また、Promiseを throwした際はSuspenseによりGridLoaderのアニメーションが表示される。
