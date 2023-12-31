@@ -718,3 +718,106 @@ export default function App() {
 ```
 StatusコンポーネントをErrorBoundary内に記述することで、成功時にはStatusコンポーネント、失敗時にはエラー表示というハンドリングを行うことができる。
 また、Promiseを throwした際はSuspenseによりGridLoaderのアニメーションが表示される。
+
+# テスト
+
+## ESLint
+Create React App を使ってプロジェクトを作成した場合、ESLint はデフォルトでインストー ルされている。
+React のアプリケーションで ESLint を使うには eslint-plugin-reactをインストールする。
+```
+npm install eslint --save-dev
+```
+
+ESLint を使う前に構文チェックのルールを記述する必要がある。
+eslint --init を実行していくつかの質問に答えることで設定ファイルが生成される。
+
+```
+$ npx eslint --init
+```
+上記を実行すると以下の3つが実行される。
+
+1. 必要なプラグイン(eslint-plugin-reactなど)がローカルの./node_modules フォルダ配下にインストール
+2. 依存パッケージが package.json に追加
+3. 設定ファイル(.eslintrc.jsonなど)がプロジェクトのルートフォルダに生成
+
+```:.eslintrc.json
+{
+"env": {
+"browser": true,
+"es2021": true },
+"extends": [ "eslint:recommended", "plugin:react/recommended"
+], "parserOptions": {
+"ecmaFeatures": { "jsx": true
+},
+"ecmaVersion": 12, "sourceType": "module"
+}, "plugins": [
+"react"
+], "rules": { }
+}
+```
+ここでは、extendsはeslintとreactのデフォルトルールを指定している。
+
+```:sample.js
+const gnar = "gnarly";
+const info = ({
+file = __filename, dir = __dirname
+}) => ( <p>
+{dir}: {file} </p>
+);
+switch (gnar) { default:
+        console.log("gnarly");
+break; }
+```
+上記のsample.jsというファイルに対してlintを実行する場合は、
+```
+$ npx eslint sample.js
+
+3:7 error 'info' is assigned a value but never used no-unused-vars
+4:10 error '__filename' is not defined no-undef
+5:9 error '__dirname' is not defined no-undef
+7:3 error 'React' must be in scope when using JSX react/react-in-jsx-scope
+× 4 problems (4 errors, 0 warnings)
+```
+で実行でき、変数infoが使用されていないことなどが指摘されている。
+
+また、ファイル名を指定せずに実行するとカレントディレ クトリ配下のファイルをすべてチェックする。
+エスケープしたいファイルがある場合は
+
+```:.eslintignore
+dist/assets/
+sample.js
+```
+.eslintignore に記述する。
+
+```:package.json
+{
+"scripts": {
+"lint": "eslint ." }
+}
+```
+package.json ファイルの scriptsに追記しておくことでnpm run lintで実行できるようになる。
+
+### ESLint プラグイン
+ESLint には上記以外にも膨大な数のプラグインが公開されており、必要なプラグインをインス トールすることで独自の構文チェックを実行できる。
+eslint-plugin-react-hooksはReact フックのコードを チェックできる。
+
+```
+$ npm install eslint-plugin-react-hooks --save-dev
+```
+
+```:.eslintrc.json
+{
+"plugins": [
+         "react-hooks"
+], "rules": {
+"react-hooks/rules-of-hooks": "error",
+"react-hooks/exhaustive-deps": "warn" }
+}
+```
+npmで追加することで、rulesに追加される。
+
+そのほか、アクセスビリティに関するルールを規定する **eslint-plugin-jsx-a11y**などもある。
+
+Awesome ESLint(https://github.com/dustinspecker/awesome-eslint)というリポジトリに は、そのような便利なプラグインが紹介されている。
+
+## Prettier
