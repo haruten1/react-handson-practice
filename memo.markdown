@@ -821,3 +821,51 @@ npmで追加することで、rulesに追加される。
 Awesome ESLint(https://github.com/dustinspecker/awesome-eslint)というリポジトリに は、そのような便利なプラグインが紹介されている。
 
 ## Prettier
+Prettier は JavaScript で非常によく使われているコード整形ツール。
+ESLint はコードの正しさを保つのに対し、 Prettier はコードの読みやすさを保つためのツール。
+Prettier をインストール
+```
+$ npm install prettier --save-dev
+```
+.prettierrc という名前のファイルを作成して、以下のルールを記述する。
+```:.prettierrc
+{
+  "semi": true, 
+  "trailingComma": none,
+  "singleQuote": false,
+  "printWidth": 80
+}
+```
+記述できるオプションの詳細については Prettier のドキュメントを確認できる(https://prettier.io/docs/en/options.html)。
+
+ESLint と Prettier を統合するのに必要なパッケージをインストール
+```
+$ npm install eslint-config-prettier eslint-plugin-prettier --save-dev
+```
+eslint-config-prettier は、ESLint のルールのうち、Prettier と相容れないものを無効化する共有設定。
+eslint-plugin-prettier は、Prettier のルールを ESLint のルー ルに統合するためのプラグイン。
+これによりESLint から Prettier を実行することが可能になる。
+.eslintrc.json に以下の設定を追加
+```:.eslintrc.json
+{
+"extends": [
+        "plugin:prettier/recommended"
+], "plugins": [
+"prettier"
+], "rules": {
+"prettier/prettier": "error" }
+}
+```
+これによりnpm run lintを実行することでPritterも同時に実行される。
+
+## 型チェック
+### TypeScript
+reactをTypeScriptで記述する場合は
+```
+$ npx create-react-app my-type --template typescript
+```
+で作成を行う。
+プロジェクトのルートには TypeScript の設定値が記述されたファイルtsconfig.json が作成されます。
+また、package.json を見てみると、TypeScriptに関わる依存パッケージがインストールされ ているのが分かる。
+
+TypeScriptの型定義を提供するパッケージは @types/ のプレフィック スを持つ。つまり、 @types/ で始まるパッケージは TypeScript で型宣言されている。
