@@ -869,3 +869,48 @@ $ npx create-react-app my-type --template typescript
 また、package.json を見てみると、TypeScriptに関わる依存パッケージがインストールされ ているのが分かる。
 
 TypeScriptの型定義を提供するパッケージは @types/ のプレフィック スを持つ。つまり、 @types/ で始まるパッケージは TypeScript で型宣言されている。
+
+## Jest
+JavaScript のテストフレームワークであれ、ばどれを使っても Reactのテストが書けるが、オフィシャルなReactのドキュメントはJestを使うことを推奨している。
+
+JestはJavaScript のテストランナーで、JSDOM経由でDOMをシミュレートする。
+
+### テスト環境の構築
+Create React App を使って作成されたプロジェクトにはデフォルトで Jest が含まれている。
+
+src フォルダの中にfunctions.jsとfunctions.test.js を作成。
+
+受け取った数値を2倍にして返す関数を作成する。
+まずは、関数が意図どおり動くかテストするためのコードを書くためにJest が提供するグローバル関数 test を使います。
+
+```:functions.test.js
+test("Multiplies by two", () => {
+       expect();
+});
+```
+引数の先頭はテスト名＝"Multiplies by two"
+2 番目の引数はテストのコードを含む関数。
+3 番目の引数はテストが完了しなかった場合のタイムアウトを指定できる。（省略された場合デフォルトの2秒）
+
+次にテスト対象となる関数のスタブを実装する。
+
+```:functions.js
+export function timesTwo() {/* ... */}
+```
+
+このようにスタブをエクスポートすることで、テスト側で SUT を timesTwo という名前でインポートして使うことができる。
+
+```:functions.test.js
+import { timesTwo } from "./functions";
+
+  test("Multiplies by two", () => {
+    expect(timesTwo(4)).toBe(8);
+});
+```
+上記はtimesTwo 関数に4を渡して呼び出すことで8が返却されることを期待している。
+
+Jest の expect 関数は値を受け取ると、その値が正しいかテストするためのマッチャー(matcher)を含んだオブジェクトを返却する。
+ここではtoBe というマッチャーを使用している。
+オブジェクトや配列をテストするには toEqual を使う。
+
+## React コンポーネントのテスト
