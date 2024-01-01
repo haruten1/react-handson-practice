@@ -870,6 +870,13 @@ $ npx create-react-app my-type --template typescript
 
 TypeScriptの型定義を提供するパッケージは @types/ のプレフィック スを持つ。つまり、 @types/ で始まるパッケージは TypeScript で型宣言されている。
 
+## テスト駆動開発(TDD)
+テスト駆動開発(Test-Driven Development:TDD)は実装よりもテストを先行させる開発手法。
+1. まず初めにテストを書く
+1. テストを実行して失敗(Red)することを確認する
+1. アプリケーションのコードを書いてテストが成功(Green)することを確認する
+1. リファクタリングによりアプリケーションのコードおよびテストを改善する(Gold)
+
 ## Jest
 JavaScript のテストフレームワークであれ、ばどれを使っても Reactのテストが書けるが、オフィシャルなReactのドキュメントはJestを使うことを推奨している。
 
@@ -914,3 +921,104 @@ Jest の expect 関数は値を受け取ると、その値が正しいかテス�
 オブジェクトや配列をテストするには toEqual を使う。
 
 ## React コンポーネントのテスト
+```:Star.js
+import { FaStar } from "react-icons/fa";
+
+export default function Star({ selected = false }) {
+  return (
+    <>
+      <h1>Great Star</h1>
+      <FaStar id="star" color={selected ? "red" : "grey"} />
+    </>
+  );
+}
+```
+```:Star.test.js
+import React from "react";
+import ReactDOM from "react-dom";
+import Star from "./Star";
+import { toHaveAttribute } from "@testing-library/jest-dom";
+import { render } from "@testing-library/react";
+import "@testing-library/jest-dom/extend-expect";
+
+expect.extend({ toHaveAttribute });
+
+test("renders an h1", () => {
+  const { getByText } = render(<Star />);
+  const h1 = getByText(/Great Star/);
+  expect(h1).toHaveTextContent("Great Star");
+});
+
+```
+
+### React Testing Library
+Create React App を使うと@testing-library というスコープからいくつかのパッケージがインストールされる。
+中でも React Testing Library( @testing-library/react)は Reactにおけるテストのベストプラクティスを集めたプロジェクトである。
+
+React Testing Library を使うべき理由のひとつとして、エラーメッセージの改善が挙げられる。
+
+下記はJestでのテスト
+```
+expect(
+  div.querySelector("notrealthing")
+).toBeTruthy();
+```
+上記は存在しないセレクタを指定した場合、querySelector は null を返す。
+これに対して toBeTruthy は以下のようなエラーを出力する。
+```
+expect(received).toBeTruthy()
+Received: null
+```
+
+@testing-library/jest-dom から toHaveAttribute マッチャーをインポート。
+これを Jest のアサーションに組み込むには、以下のように expect 関数の extend メソッドを使う。
+
+```
+expect.extend({ toHaveAttribute });
+```
+
+これを使って先ほどのJestのテストを書き直すと以下のようになる。
+
+```
+test("renders a star", () => {
+  const div = document.createElement("div"); ReactDOM.render(<Star />, div);
+  expect(
+    div.querySelector("svg")
+  ).toHaveAttribute("id", "hotdog");
+});
+```
+上記のテストを実行すると、以下のエラーが出力される。
+
+```
+expect(element).toHaveAttribute("id", "hotdog")
+// element.getAttribute("id") === "hotdog"
+Expected the element to have attribute:
+  id="hotdog"
+Received:
+  id="star"
+```
+上記のようにより詳細なエラー内容が出る。
+
+カスタムマッチャーをすべて記述するのが面倒な場合は @testing-library/jest-dom/extend-expect をインポートすることで、Testing Library の提供するすべてのカスタムマッチャーが Jest から使用可能になる。
+
+```
+import "@testing-library/jest-dom/extend-expect";
+```
+
+Create React Appを使った場合、extend-expectは既にインポートされている。
+src フォルダに setupTests.jsに記述がある。
+```
+// jest-dom adds custom jest matchers for asserting on DOM nodes.
+// allows you to do things like:
+// expect(element).toHaveTextContent(/react/i)
+// learn more: https://github.com/testing-library/jest-dom
+import "@testing-library/jest-dom/extend-expect";
+```
+
+### コードカバレッジ
+**コードカバレッジ**は全体のコードのうちどれだけの行数がテストされたかを計測してパーセン テージで表すこと。
+Jest もコードカバレッジのレポート機能を持っており、Istanbul を使ってこれを実現できる。
+```
+$ npm test -- --coverage
+```
+実行後、コンソールに出力され、テスト完了後にプロジェクトのルートに coverage といフォルダが生成され、その中にレポート用のHTMLがある。
