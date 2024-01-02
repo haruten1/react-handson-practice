@@ -1022,3 +1022,120 @@ Jest もコードカバレッジのレポート機能を持っており、Istanb
 $ npm test -- --coverage
 ```
 実行後、コンソールに出力され、テスト完了後にプロジェクトのルートに coverage といフォルダが生成され、その中にレポート用のHTMLがある。
+
+# ルーティング
+ルーティングとは、SPA においてユーザーのリクエストのエンドポイントを定義すること。これらのエンドポイントは、実際のファイルとは対応せず、ブラウザの提供する location や history オブジェクトと連動している。
+
+## React Router
+まず初めに、react-router と react-router-dom をインストールする。
+
+index.jsでは ReactDOM.render で App コンポーネントを描画する代わりに、Router コンポーネントの中に App コンポーネントを描画する。
+
+```:./src/index.js
+import React from "react";
+import { render } from "react-dom"; import App from "./App";
+import { BrowserRouter as Router } from "react-router-dom";
+
+render( 
+  <Router>
+    <App />
+  </Router>,
+   document.getElementById("root")
+);
+```
+ここで Router コンポーネントの役 割は、現在ユーザーが閲覧しているページの位置を自身の子コンポーネントに伝えること。
+Router コンポーネントはアプリケーション内で 1 箇所だけ、なるべくコンポーネントツリーのルート(root)に近い場所に配置する。
+
+ルーティングの定義はApp.js 内に記述する。
+```:./src/App.js
+import React from "react";
+import { Routes, Route } from "react-router-dom"; import {
+  Home,
+  About,
+  Events,
+  Products,
+  Contact
+} from "./pages";
+
+function App() { return (
+<div> 
+  <Routes>
+    <Route path="/" element={<Home />} /> 
+    <Route
+      path="/about"
+      element={<About />} />
+    <Route
+      path="/events" element={<Events />}
+    />
+    <Route
+      path="/products"
+      element={<Products />}
+     />
+    <Route
+      path="/contact" element={<Contact />}
+    /> 
+  </Routes>
+</div> );
+}
+```
+
+これらのルーティングの定義により、上位の Router コンポーネントは、window.location の値が変わった場合にどのコンポーネントを描画すればよいか判断する。
+ブラウザの window.location が path の値と一致すれば element に指定されたコンポーネントが描画される。
+
+ Link コンポーネントによりページ遷移が容易になる。
+
+ ```
+<nav>
+  <Link to="about">About</Link>
+  <Link to="events">Events</Link>
+  <Link to="products">Products</Link>
+  <Link to="contact">Contact Us</Link>
+</nav>
+ ```
+
+### React Router プロパティ
+React Router は配下のコンポーネントに対していくつかのプロパティを渡すことができる。たとえば 配下のコンポーネントは、現在の location の値をプロパティ経由で取得することが可能である。
+
+ここでは 404 のエラー(ページが見つかりませんでし た)を表示するコンポーネント Whoops404 を実装する。
+
+```:./src/pages.js
+export function Whoops404() {
+  return (
+    <div>
+      <h1>Resource not found</h1>
+    </div>
+  );
+}
+```
+
+コンポーネントが実装できたら、App.js にルートを追加する。
+*を指定することで存在しないルートを指定した場合、Whoops404 コンポーネントが描画される。
+
+```./src/App.js
+・
+・
+・
+<Route path="*" element={<Whoops404 />} />
+```
+
+しかし Whoops404 コンポーネントはページが存在しないというメッセージを表示するだけで、どのページが存在しなかったのか 説明していない。
+そこで、React Router の提供する useLocation フックを用いて、指定されたページのパスを表示するコンポーネントを実装する。
+
+```:./src/pages.js
+import { useLocation } from "react-router-dom";
+
+export function Whoops404() { 
+  let location = useLocation(); 
+  console.log(location);
+  return (
+    <div> 
+      <h1>
+        Resource not found at {location.pathname} 
+      </h1>
+    </div> 
+  );
+}
+```
+
+ここでは useLocation で現在のページの情報を取得してコンソールに出力している。
+また、プロパティからパスの値 location.pathname を取得して描画している。
