@@ -1139,3 +1139,45 @@ export function Whoops404() {
 
 ここでは useLocation で現在のページの情報を取得してコンソールに出力している。
 また、プロパティからパスの値 location.pathname を取得して描画している。
+
+### ネストしたルート
+```./src/App.js
+function App() { 
+  return (
+  <div> 
+    <Routes>
+      <Route path="/" element={<Home />} /> 
+      <Route path="about" element={<About />}>
+        <Route
+          path="services" element={<Services />}
+        />
+        <Route
+          path="history" element={<History />}
+        /> 
+        <Route
+          path="location"
+          element={<Location />}
+        />
+      </Route> 
+    </Routes>
+   </div> );
+}
+```
+上記のように記述することでネストが深いルーティングも記述できる。
+
+### リダイレクト
+```./src/App.js
+function App() { 
+  return (
+  <div> 
+    <Routes>
+      <Route path="/" element={<Home />} /> 
+      <Redirect
+        from="services"
+        to="about/services"
+      />
+    </Routes>
+   </div> );
+}
+```
+このように/servicesへのアクセスをabout/servicesへリダイレクトできる。
